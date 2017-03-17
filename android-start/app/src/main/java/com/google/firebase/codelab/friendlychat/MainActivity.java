@@ -76,6 +76,7 @@ import com.google.firebase.storage.UploadTask;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -140,6 +141,9 @@ public class MainActivity extends AppCompatActivity
     private FirebaseUser mFirebaseUser;
     private DatabaseReference mFirebaseDatabaseReference;
     private FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder> mFirebaseAdapter;
+    private FirebaseRemoteConfig mFirebaseRemoteConfig;
+    private FirebaseAnalytics mFirebaseAnalytics;
+    private AdView mAdView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,6 +171,7 @@ public class MainActivity extends AppCompatActivity
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
+                .addApi(AppInvite.API)
                 .build();
 
         // Initialize ProgressBar and RecyclerView.
@@ -320,6 +325,82 @@ public class MainActivity extends AppCompatActivity
                 startActivityForResult(intent, REQUEST_IMAGE);
             }
         });
+
+        // Initializa Firebase Measurement.
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+
+        // Initialize Firebase Remote Config.
+        mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
+
+        // Define Firebase Remote Config Settings.
+        FirebaseRemoteConfigSettings firebaseRemoteConfigSettings =
+                new FirebaseRemoteConfigSettings.Builder()
+                .setDeveloperModeEnabled(true)
+                .build();
+
+        // Define default config values. Defaults are used when fetched config values are not
+        // available. Eg: if an error occurred fetching values from the server.
+        Map<String, Object> defaultConfigMap = new HashMap<>();
+        defaultConfigMap.put("friendly_msg_length", 10L);
+
+        // Apply config settings and default values.
+        mFirebaseRemoteConfig.setConfigSettings(firebaseRemoteConfigSettings);
+        mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
+
+        // Fetch remote config.
+        fetchConfig();
+
+        // Initialize adView
+        mAdView = (AdView) findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+    }
+
+    // Fetch the config to determine the allowed length of messages.
+    private void fetchConfig() {
+        long cacheExpiration = 3600; // 1 hour in seconds
+        // If developer mode is enabled reduce cacheExpiration to 0 so that
+        // each fetch goes to the server. This should not be used in release
+        // builds.
+        if (mFirebaseRemoteConfig.getInfo().getConfigSettings()
+                .isDeveloperModeEnabled()) {
+            cacheExpiration = 0;
+        }
+        mFirebaseRemoteConfig.fetch(cacheExpiration)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        // Make the fetched config available via
+                        // FirebaseRemoteConfig get<type> calls.
+                        mFirebaseRemoteConfig.activateFetched();
+                        applyRetrievedLengthLimit();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // There has been an error fetching the config
+                        Log.w(TAG, "Error fetching config: " +
+                            e.getMessage());
+                        applyRetrievedLengthLimit();
+                    }
+                });
+    }
+
+    private void applyRetrievedLengthLimit() {
+        Long friendly_msg_length =
+                mFirebaseRemoteConfig.getLong("friendly_msg_length");
+        mMessageEditText.setFilters(new InputFilter[]{new
+                InputFilter.LengthFilter(friendly_msg_length.intValue())});
+        Log.d(TAG, "FML is: " + friendly_msg_length);
+    }
+
+    private void sendInvitation() {
+        Intent intent = new AppInviteInvitation.IntentBuilder(getString(R.string.invitation_title))
+                .setMessage(getString(R.string.invitation_message))
+                .setCallToActionText(getString(R.string.invitation_cta))
+                .build();
+        startActivityForResult(intent, REQUEST_INVITE);
     }
 
     @Override
@@ -357,6 +438,27 @@ public class MainActivity extends AppCompatActivity
                             });
                 }
             }
+        } else if (requestCode == REQUEST_INVITE) {
+            if (resultCode == RESULT_OK) {
+                // Use Firebase Measurement to log that invitation was sent.
+                Bundle payload = new  Bundle();
+                payload.putString(FirebaseAnalytics.Param.VALUE, "sent");
+                mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.SHARE,
+                        payload);
+
+                // Check how many invitations were sent and log.
+                String[] ids = AppInviteInvitation.getInvitationIds(resultCode, data);
+                Log.d(TAG, "Invitations sent: " + ids.length);
+            } else {
+                // Use Firebase Measurement to log that invitation was not sent
+                Bundle payload = new Bundle();
+                payload.putString(FirebaseAnalytics.Param.VALUE, "not sent");
+                mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.SHARE,
+                        payload);
+
+                // Sending failed or it was canceled, show failure message to the user
+                Log.d(TAG, "Failed to send invitation.");
+            }
         }
     }
 
@@ -393,16 +495,27 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onPause() {
+        if (mAdView != null) {
+            mAdView.pause();
+        }
         super.onPause();
     }
 
+    /**  Called when returning to the activity */
     @Override
     public void onResume() {
         super.onResume();
+        if (mAdView != null) {
+            mAdView.resume();
+        }
     }
 
+    /** Called before the activity is destroyed */
     @Override
     public void onDestroy() {
+        if (mAdView != null) {
+            mAdView.destroy();
+        }
         super.onDestroy();
     }
 
@@ -422,9 +535,22 @@ public class MainActivity extends AppCompatActivity
                 mUsername = ANONYMOUS;
                 startActivity(new Intent(this, SignInActivity.class));
                 return true;
+            case R.id.fresh_config_menu:
+                fetchConfig();
+                return true;
+            case R.id.invite_menu:
+                sendInvitation();
+                return true;
+            case R.id.crash_menu:
+                FirebaseCrash.logcat(Log.ERROR, TAG, "crash caused");
+                causeCrash();
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void causeCrash() {
+        throw new NullPointerException("Fake null pointer exception");
     }
 
     @Override
@@ -445,8 +571,12 @@ public class MainActivity extends AppCompatActivity
                 .setName(mUsername)
                 .setUrl(MESSAGE_URL.concat(friendlyMessage.getId() + "/recipient"));
 
+        String mText = friendlyMessage.getText();
+        if (mText == null) {
+            mText = "";
+        }
         Indexable messageToIndex = Indexables.messageBuilder()
-                .setName(friendlyMessage.getText())
+                .setName(mText)
                 .setUrl(MESSAGE_URL.concat(friendlyMessage.getId()))
                 .setSender(sender)
                 .setRecipient(recipient)

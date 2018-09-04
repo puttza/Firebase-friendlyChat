@@ -48,7 +48,6 @@
   <!-- App Styling -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en">
   <link rel="stylesheet" href="styles/main.css">
-
 </head>
 <body>
 <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
@@ -61,32 +60,12 @@
       </div>
       <div id="user-container">
         <div hidden id="user-pic"></div>
-          <button hidden id="user-name" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white">Menu</button>
-          <ul class="mdl-menu mdl-js-menu mdl-js-ripple-effect" for="user-name">
-            <li class="mdl-menu__item" id="change-pass">Change Password</li>
-            <li class="mdl-menu__item" id="change-email">Change Email</li>
-          </ul>
-
-        <dialog class="mdl-dialog">
-          <h4 class="mdl-dialog__title">Change Password</h4>
-          <div class="mdl-dialog__content">
-            <input type="text"/>
-          </div>
-          <div class="mdl-dialog__actions">
-            <button type="button" class="mdl-button">Agree</button>
-            <button type="button" class="mdl-button close">Disagree</button>
-          </div>
-        </dialog>
-
+        <div hidden id="user-name"></div>
         <button hidden id="sign-out" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
           Sign-out
         </button>
         <button hidden id="sign-in" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
           <i class="material-icons">account_circle</i>Sign-in with Google
-        </button>
-
-        <button hidden id="sign-in-fb" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
-          <i class="material-icons">account_circle</i>Sign-in with Facebook
         </button>
       </div>
     </div>
@@ -111,7 +90,7 @@
             </button>
           </form>
           <form id="image-form" action="#">
-            <input id="mediaCapture" type="file" accept="image/*,capture=camera">
+            <input id="mediaCapture" type="file" accept="image/*" capture="camera">
             <button id="submitImage" title="Add an image" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-color--amber-400 mdl-color-text--white">
               <i class="material-icons">image</i>
             </button>
@@ -128,26 +107,30 @@
   </main>
 </div>
 
-<!-- Firebase -->
-<!-- ***********************************************************************************************************************
-     * TODO(DEVELOPER): Paste the initialization snippet from: Firebase Console > Overview > Add Firebase to your web app. *
-     *********************************************************************************************************************** -->
-<!--<script src="https://www.gstatic.com/firebasejs/3.7.1/firebase-app.js"></script>-->
-<!--<script src="https://www.gstatic.com/firebasejs/3.7.1/firebase-auth.js"></script>-->
-<!--<script src="https://www.gstatic.com/firebasejs/3.7.1/firebase-database.js"></script>-->
-<!--<script src="https://www.gstatic.com/firebasejs/3.7.1/firebase-messaging.js"></script>-->
-<script src="https://www.gstatic.com/firebasejs/3.7.2/firebase.js"></script>
+<!-- Import and configure the Firebase SDK -->
+<!-- These scripts are made available when the app is served or deployed on Firebase Hosting -->
+<!-- If you do not want to serve/host your project using Firebase Hosting see https://firebase.google.com/docs/web/setup -->
+<script src="/__/firebase/5.4.2/firebase-app.js"></script>
+<script src="/__/firebase/5.4.2/firebase-auth.js"></script>
+<script src="/__/firebase/5.4.2/firebase-database.js"></script>
+<script src="/__/firebase/5.4.2/firebase-storage.js"></script>
+<script src="/__/firebase/5.4.2/firebase-messaging.js"></script>
+<script src="/__/firebase/init.js"></script>
+
+<!-- <script src="https://www.gstatic.com/firebasejs/5.4.2/firebase.js"></script>
 <script>
   // Initialize Firebase
   var config = {
-    apiKey: "AIzaSyDqx8dBRaswJdD_1_RG0Le_WkNQDh0FHhM",
-    authDomain: "friendlychat-b098f.firebaseapp.com",
-    databaseURL: "https://friendlychat-b098f.firebaseio.com",
-    storageBucket: "friendlychat-b098f.appspot.com",
-    messagingSenderId: "1099469579269"
+    apiKey: "AIzaSyClbPLY8M0ntLIy5D1Pd9KJkU8K86IL5zY",
+    authDomain: "friendly-chit-chat.firebaseapp.com",
+    databaseURL: "https://friendly-chit-chat.firebaseio.com",
+    projectId: "friendly-chit-chat",
+    storageBucket: "friendly-chit-chat.appspot.com",
+    messagingSenderId: "1088685878804"
   };
   firebase.initializeApp(config);
-</script>
+</script> -->
+
 <script src="scripts/main.js"></script>
 </body>
 </html>

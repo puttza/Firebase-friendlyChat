@@ -1,6 +1,6 @@
 service firebase.storage {
-  match /b/friendlychat-b098f.appspot.com/o {
-    match /{userId}/{timeStamp}/{fileName} {
+  match /b/{bucket}/o {
+    match /{userId}/{messageId}/{fileName} {
       allow write: if request.auth.uid == userId;
       allow read;
     }
